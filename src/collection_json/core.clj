@@ -6,67 +6,40 @@
   ) 
   (:use 
     [clojure.java.io]
-  )
-)
+  ))
 
 (defn beanify [input]
   (cond
     (map? input) input
-    :else (map (fn [a] (bean a)) input)
-  )
-)
+    :else (map bean input)))
 
-(defn parseCollection [input] 
+(defn parse-collection [input] 
   (let [b (. (new CollectionParser) parse (reader input))]
-    (assoc (bean b) :underlying b)
-  )
-)
+    (assoc (bean b) :underlying b)))
 
-(defn parseTemplate [input] 
+(defn parse-template [input] 
   (let [b (. (new CollectionParser) parseTemplate (reader input))]
-    (assoc (bean b) :underlying b)
-  )  
-)
+    (assoc (bean b) :underlying b)))
 
-(defn byRel [withRels rel]
-  (beanify
-    (filter (fn [i] (= (. i getRel) rel) ) withRels)
-  )
-)
+(defn by-rel [withRels rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) withRels)))
 
-(defn linksByRel [collOrItem rel]
-  (byRel (:links collOrItem) rel)
-)
+(defn links-by-rel [collOrItem rel] (by-rel (:links collOrItem) rel))
 
-(defn linkByRel [collOrItem rel]
-  (first (linksByRel collOrItem rel))
-)
+(defn link-by-rel [collOrItem rel] (first (links-by-rel collOrItem rel)))
 
-(defn queriesByRel [coll rel]
-  (byRel (:queries coll) rel)
-)
+(defn queries-by-rel [coll rel] (by-rel (:queries coll) rel))
 
-(defn queryByRel [coll rel]
-  (first (queryByRel coll rel))
-)
+(defn query-by-rel [coll rel] (first (queries-by-rel coll rel)))
 
-(defn items [coll]
-  (beanify (:items coll))  
-)
+(defn items [coll] (beanify (:items coll)))
 
-(defn headItem [coll] 
-  (first (items coll))
-)
+(defn head-item [coll] (first (items coll)))
 
-(defn props [obj]
-  (beanify (:data obj))
-)
+(defn props [obj] (beanify (:data obj)))
 
-(defn propByName [obj n]
-  (first (filter (fn [i] (= (:name i) n)) (props obj)))
-)
+(defn prop-by-name [obj n] (first (filter (fn [i] (= (:name i) n)) (props obj))))
 
-(defn toProperty [input]
+(defn to-property [input]
   (cond
     (map? input)
       (cond
@@ -81,30 +54,24 @@
            (seq? v) (Property/arrayObject n (Optional/none) v)
            (map? v) (Property/objectMap n (Optional/none) v)
         :else (Property/value n (Optional/none) v)
-      ))
-  )
-)
+      ))))
 
-(defn makeData [input]
-  (map (fn [e] (toProperty e)) input)
-)
+(defn make-data [input]
+  (map to-property input))
 
 (defn create-template [input]
-  (Template/create (makeData input))
-)
+  (Template/create (make-data input)))
 
 (defn write-to [templateOrCollection output]
   (. (cond 
     (map? templateOrCollection) (:underlying templateOrCollection)
     :else templateOrCollection
-  ) writeTo (writer output))
-)
+  ) writeTo (writer output)))
 
 (defn -main [& m]
-  (def coll (parseCollection (file (first m))))
-  (println (linkByRel coll "feed"))
-  (println (propByName (headItem coll) "full-name"))  
+  (def coll (parse-collection (file (first m))))
+  (println (link-by-rel coll "feed"))
+  (println (prop-by-name (head-item coll) "full-name"))  
   (println (create-template {:hello "world", :do "fawk"}))
-  (write-to (create-template (cons (propByName (headItem coll) "full-name") nil)) (file "/tmp/template.json"))
-  (write-to coll (file "/tmp/cj.json"))
-)
+  (write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
+  (write-to coll (file "/tmp/cj.json")))
