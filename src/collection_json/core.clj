@@ -2,30 +2,26 @@
   (:import
     [net.hamnaberg.json.parser CollectionParser]
     [net.hamnaberg.json.util Optional]
-    [net.hamnaberg.json Template Property]
-  ) 
+    [net.hamnaberg.json Template Property Item Query]
+  )  
   (:use 
     [clojure.java.io]
+    [collection-json.internal]
   ))
 
-(defn beanify [input]
-  (cond
-    (map? input) input
-    :else (map bean input)))
-
 (defn parse-collection [input] 
-  (let [b (. (new CollectionParser) parse (reader input))]
+  (let [b (. (CollectionParser.) parse (reader input))]
     (assoc (bean b) :underlying b)))
 
 (defn parse-template [input] 
-  (let [b (. (new CollectionParser) parseTemplate (reader input))]
+  (let [b (. (CollectionParser.) parseTemplate (reader input))]
     (assoc (bean b) :underlying b)))
 
-(defn by-rel [withRels rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) withRels)))
+(defn by-rel [linkable rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) linkable)))
 
-(defn links-by-rel [collOrItem rel] (by-rel (:links collOrItem) rel))
+(defn links-by-rel [linkable rel] (by-rel (:links linkable) rel))
 
-(defn link-by-rel [collOrItem rel] (first (links-by-rel collOrItem rel)))
+(defn link-by-rel [linkable rel] (first (links-by-rel linkable rel)))
 
 (defn queries-by-rel [coll rel] (by-rel (:queries coll) rel))
 
@@ -43,35 +39,52 @@
   (cond
     (map? input)
       (cond
-       (and (contains? input :name) (contains? input :value)) (Property/value (:name input) (Optional/none) (:value input))
-       (and (contains? input :name) (contains? input :array)) (Property/array (:name input) (Optional/none) (:array input))
-       (and (contains? input :name) (contains? input :object)) (Property/object (:name input) (Optional/none) (:object input))
-       :else nil
-      )      
+       (and (contains? input :name) (contains? input :value)) 
+          (Property/value (:name input) (Optional/none) (:value input))
+       (and (contains? input :name) (contains? input :array)) 
+          (Property/array (:name input) (Optional/none) (:array input))
+       (and (contains? input :name) (contains? input :object)) 
+          (Property/object (:name input) (Optional/none) (:object input))
+       :else nil)      
     :else
       (let [n (name (key input)) v (val input)]
          (cond 
+           (nil? v) (Property/template n)
            (seq? v) (Property/arrayObject n (Optional/none) v)
-           (map? v) (Property/objectMap n (Optional/none) v)
+           (map? v) (Property/objectMap n (Optional/none) v)           
         :else (Property/value n (Optional/none) v)
       ))))
 
-(defn make-data [input]
-  (map to-property input))
+(defn make-data [input] (map to-property input))
+
+(defn create-item [href props]
+  (Item/create (to-uri href) (make-data props)))
+
+(defn create-query [href rel props]
+  (Query/create (to-target href) rel (Optional/none) (make-data props)))
+
+(defn expand [query data]
+  (. query expand data))
 
 (defn create-template [input]
   (Template/create (make-data input)))
 
-(defn write-to [templateOrCollection output]
+(defn create-error [title code message]
+  (net.hamnaberg.json.Error/create title code message))
+
+(defn write-to [writeable output]
   (. (cond 
-    (map? templateOrCollection) (:underlying templateOrCollection)
-    :else templateOrCollection
+    (map? writeable) (:underlying writeable)
+    :else writeable
   ) writeTo (writer output)))
 
 (defn -main [& m]
-  (def coll (parse-collection (file (first m))))
-  (println (link-by-rel coll "feed"))
-  (println (prop-by-name (head-item coll) "full-name"))  
+  ;(def coll (parse-collection (file (first m))))
+  ;(println (link-by-rel coll "feed"))
+  ;(println (prop-by-name (head-item coll) "full-name"))  
   (println (create-template {:hello "world", :do "fawk"}))
-  (write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
-  (write-to coll (file "/tmp/cj.json")))
+  (println (create-item "foo" {:hello "world", :do 1}))
+  (println (. (create-query "foo" "alternate" {:q nil}) getData))
+  ;(write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
+  ;(write-to coll (file "/tmp/cj.json")))
+)
