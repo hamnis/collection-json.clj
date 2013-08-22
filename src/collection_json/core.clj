@@ -2,7 +2,7 @@
   (:import
     [net.hamnaberg.json.parser CollectionParser]
     [net.hamnaberg.json.util Optional]
-    [net.hamnaberg.json Template Property Item Query]
+    [net.hamnaberg.json Template Property Item Query Collection]
   )  
   (:use 
     [clojure.java.io]
@@ -10,12 +10,10 @@
   ))
 
 (defn parse-collection [input] 
-  (let [b (. (CollectionParser.) parse (reader input))]
-    (assoc (bean b) :underlying b)))
+  (. (CollectionParser.) parse (reader input))
 
 (defn parse-template [input] 
-  (let [b (. (CollectionParser.) parseTemplate (reader input))]
-    (assoc (bean b) :underlying b)))
+  (. (CollectionParser.) parseTemplate (reader input))
 
 (defn by-rel [linkable rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) linkable)))
 
@@ -31,12 +29,28 @@
 
 (defn head-item [coll] (first (items coll)))
 
+(defn template [has-template]
+  (cond 
+    (and (map? has-template) (contains? has-template :template)) 
+      (.. (:template has-template) (orNull))
+    (instance? Item has-template) (. has-template toTemplate)
+    ;; now, assume this is a Collection
+    :else (.. has-template .getTemplate (orNull))))
+
 (defn props [obj] (beanify (:data obj)))
 
 (defn prop-by-name [obj n] (first (filter (fn [i] (= (:name i) n)) (props obj))))
 
+(defn make-property [n v]
+  (cond 
+    (nil? v) (Property/template n)
+    (seq? v) (Property/arrayObject n (Optional/none) v)
+    (map? v) (Property/objectMap n (Optional/none) v)           
+  :else (Property/value n (Optional/none) v)))
+
 (defn to-property [input]
   (cond
+    (instance? Property input) input
     (map? input)
       (cond
        (and (contains? input :name) (contains? input :value)) 
@@ -48,12 +62,7 @@
        :else nil)      
     :else
       (let [n (name (key input)) v (val input)]
-         (cond 
-           (nil? v) (Property/template n)
-           (seq? v) (Property/arrayObject n (Optional/none) v)
-           (map? v) (Property/objectMap n (Optional/none) v)           
-        :else (Property/value n (Optional/none) v)
-      ))))
+        (make-property n v))))
 
 (defn make-data [input] (map to-property input))
 
@@ -63,14 +72,24 @@
 (defn create-query [href rel props]
   (Query/create (to-target href) rel (Optional/none) (make-data props)))
 
-(defn expand [query data]
-  (. query expand data))
-
 (defn create-template [input]
   (Template/create (make-data input)))
 
 (defn create-error [title code message]
   (net.hamnaberg.json.Error/create title code message))
+
+(defn create-collection [m]
+  (let [href (opt (to-uri (:href m)))
+        links (listify (:links m))
+        items (listify (:items m))
+        queries (listify (:queries m))
+        template (opt (:template m))
+        error (opt (:error m))
+       ]
+    (Collection/create href links items queries template error)))
+
+(defn expand [query props]
+  (. query expand (make-data props)))
 
 (defn write-to [writeable output]
   (. (cond 
@@ -79,12 +98,14 @@
   ) writeTo (writer output)))
 
 (defn -main [& m]
-  ;(def coll (parse-collection (file (first m))))
+  (def coll (parse-collection (file (first m))))
+  (println (template coll))
   ;(println (link-by-rel coll "feed"))
   ;(println (prop-by-name (head-item coll) "full-name"))  
   (println (create-template {:hello "world", :do "fawk"}))
   (println (create-item "foo" {:hello "world", :do 1}))
   (println (. (create-query "foo" "alternate" {:q nil}) getData))
+  (println (create-collection {:href "hello"}))
   ;(write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
   ;(write-to coll (file "/tmp/cj.json")))
 )
