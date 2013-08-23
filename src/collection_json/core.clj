@@ -10,10 +10,10 @@
   ))
 
 (defn parse-collection [input] 
-  (. (CollectionParser.) parse (reader input))
+  (beanify (. (CollectionParser.) parse (reader input))))
 
 (defn parse-template [input] 
-  (. (CollectionParser.) parseTemplate (reader input))
+  (beanify (. (CollectionParser.) parseTemplate (reader input))))
 
 (defn by-rel [linkable rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) linkable)))
 
@@ -31,11 +31,12 @@
 
 (defn template [has-template]
   (cond 
-    (and (map? has-template) (contains? has-template :template)) 
-      (.. (:template has-template) (orNull))
-    (instance? Item has-template) (. has-template toTemplate)
-    ;; now, assume this is a Collection
-    :else (.. has-template .getTemplate (orNull))))
+    (and (map? has-template) (contains? has-template :template))
+        (extract-opt (:template has-template))
+    (instance? Item has-template) (. has-template (toTemplate))
+    (instance? Collection has-template) (extract-opt (. has-template (getTemplate)))
+    ;; whatever this is we cannot extract a template from it.
+    :else nil))
 
 (defn props [obj] (beanify (:data obj)))
 
@@ -44,9 +45,9 @@
 (defn make-property [n v]
   (cond 
     (nil? v) (Property/template n)
-    (seq? v) (Property/arrayObject n (Optional/none) v)
-    (map? v) (Property/objectMap n (Optional/none) v)           
-  :else (Property/value n (Optional/none) v)))
+    (seq? v) (Property/arrayObject n none v)
+    (map? v) (Property/objectMap n none v)           
+  :else (Property/value n none v)))
 
 (defn to-property [input]
   (cond
@@ -54,11 +55,11 @@
     (map? input)
       (cond
        (and (contains? input :name) (contains? input :value)) 
-          (Property/value (:name input) (Optional/none) (:value input))
+          (Property/value (:name input) none (:value input))
        (and (contains? input :name) (contains? input :array)) 
-          (Property/array (:name input) (Optional/none) (:array input))
+          (Property/array (:name input) none (:array input))
        (and (contains? input :name) (contains? input :object)) 
-          (Property/object (:name input) (Optional/none) (:object input))
+          (Property/object (:name input) none (:object input))
        :else nil)      
     :else
       (let [n (name (key input)) v (val input)]
@@ -67,10 +68,10 @@
 (defn make-data [input] (map to-property input))
 
 (defn create-item [href props]
-  (Item/create (to-uri href) (make-data props)))
+  (Item/create (opt (to-uri href)) (make-data props)))
 
 (defn create-query [href rel props]
-  (Query/create (to-target href) rel (Optional/none) (make-data props)))
+  (Query/create (to-target href) rel none (make-data props)))
 
 (defn create-template [input]
   (Template/create (make-data input)))
@@ -92,13 +93,12 @@
   (. query expand (make-data props)))
 
 (defn write-to [writeable output]
-  (. (cond 
-    (map? writeable) (:underlying writeable)
-    :else writeable
-  ) writeTo (writer output)))
+  (. writeable (writeTo (writer output))))
 
 (defn -main [& m]
   (def coll (parse-collection (file (first m))))
+  (println coll)
+  (println (extract-opt(:template coll)))
   (println (template coll))
   ;(println (link-by-rel coll "feed"))
   ;(println (prop-by-name (head-item coll) "full-name"))  

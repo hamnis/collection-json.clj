@@ -3,11 +3,6 @@
     [net.hamnaberg.json Target URITarget URITemplateTarget]
     [net.hamnaberg.json.util Optional]))
 
-(defn beanify [input]
-  (cond
-    (map? input) input
-    :else (map bean input)))
-
 (defn to-uri [href]
   (cond 
     (nil? href) nil
@@ -21,15 +16,19 @@
       (try (URITarget. (to-uri dereferenceable))
         (catch Exception e (URITemplateTarget. (str dereferenceable))))))
 
-(defn listify [v] (if (nil? v) () (list v)))
+(defn listify [v] (flatten (if (nil? v) () (list v))))
 
 (defn opt [v] (Optional/fromNullable v))
 
 (def none (opt nil))
 
-(defn some? [v] 
-  (cond 
-    (nil? v) false
-    (instance? Optional v) (. v isSome)))
+(defn opt? [v]
+  (instance? Optional v))
 
-(defn none? [v] (not some? v))
+(defn extract-opt [v] (if (opt? v) (. v (orNull)) nil))
+
+(defn beanify [input]
+  (cond
+    (map? input) input
+    (seq? input) (map bean input)
+    :else (bean input)))
