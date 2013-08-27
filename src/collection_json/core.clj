@@ -1,7 +1,6 @@
 (ns collection-json.core 
   (:import
-    [net.hamnaberg.json.parser CollectionParser]
-    [net.hamnaberg.json.util Optional]
+    [net.hamnaberg.json.parser CollectionParser]    
     [net.hamnaberg.json Template Property Item Query Collection]
   )  
   (:use 
@@ -97,8 +96,7 @@
 
 (defn -main [& m]
   (def coll (parse-collection (file (first m))))
-  (println coll)
-  (println (extract-opt(:template coll)))
+  (println coll)  
   (println (template coll))
   ;(println (link-by-rel coll "feed"))
   ;(println (prop-by-name (head-item coll) "full-name"))  
