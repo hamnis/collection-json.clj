@@ -7,5 +7,8 @@
   			[org.clojure/clojure "1.5.1"]
   			[net.hamnaberg.rest/json-collection "2.3-SNAPSHOT"]
   ]
+  :dev-dependencies [
+  			[clj-http "0.7.6"]
+  ]
   :main collection-json.core
 )
