@@ -18,7 +18,10 @@
 
 (defn listify [v] (flatten (if (nil? v) () (list v))))
 
-(defn opt [v] (Optional/fromNullable v))
+(defn opt [v] 
+  (cond 
+    (instance? Optional v) v
+    :else (Optional/fromNullable v)))
 
 (def none (opt nil))
 
@@ -32,3 +35,8 @@
     (map? input) input
     (seq? input) (map bean input)
     :else (bean input)))
+
+(defn dispatch-on-first-class [& arglist] (let [args (count arglist)]
+  (cond 
+    (= args 1) (class (first arglist))
+    :default nil)))
