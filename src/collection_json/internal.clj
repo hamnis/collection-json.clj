@@ -1,7 +1,11 @@
 (ns collection-json.internal
   (:import
     [net.hamnaberg.json Target URITarget URITemplateTarget]
-    [net.hamnaberg.json.util Optional]))
+    [net.hamnaberg.json.util Optional Function]))
+
+(deftype internal-fn [f]
+  Function 
+  (apply [this input] (f input)))
 
 (defn to-uri [href]
   (cond 
@@ -9,12 +13,12 @@
     (instance? java.net.URI href) href
     :else (java.net.URI/create (str href))))
 
-(defn to-target [dereferenceable]
+(defn to-target [href]
   (cond
-    (instance? Target) dereferenceable
+    (instance? Target href) href
     :else 
-      (try (URITarget. (to-uri dereferenceable))
-        (catch Exception e (URITemplateTarget. (str dereferenceable))))))
+      (try (URITarget. (to-uri href))
+        (catch Exception e (URITemplateTarget. (str href))))))
 
 (defn listify [v] (flatten (if (nil? v) () (list v))))
 
@@ -22,6 +26,9 @@
   (cond 
     (instance? Optional v) v
     :else (Optional/fromNullable v)))
+
+(defn map-opt [f v]
+  (.map v (internal-fn. f)))
 
 (def none (opt nil))
 

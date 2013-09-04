@@ -67,17 +67,17 @@
 
 (defn make-data [input] (map to-property input))
 
-(defmulti create-link dispatch-on-first-class)
+(defmulti  create-link dispatch-on-first-class)
 (defmethod create-link Link [link] link)
 (defmethod create-link Map [m] (create-link (:href m) (:rel m)))
 (defmethod create-link :default [href rel] (Link/create (to-uri href) rel))
 
-(defmulti create-item dispatch-on-first-class)
+(defmulti  create-item dispatch-on-first-class)
 (defmethod create-item Item [item] item)
 (defmethod create-item Map [m] (create-item (:href m) (:data m)))
 (defmethod create-item :default [href props links] (Item/create (opt (to-uri href)) (make-data props) (map create-link (listify links))))
 
-(defmulti create-query dispatch-on-first-class)
+(defmulti  create-query dispatch-on-first-class)
 (defmethod create-query Query [q] q)
 (defmethod create-query Map [m] (create-query (:href m) (:rel m) (:data m)))
 (defmethod create-query :default [href rel props] (Query/create (to-target href) rel none (make-data props)))
@@ -85,24 +85,25 @@
 (defn create-template [data]
   (Template/create (make-data data)))
 
-(defmulti create-error dispatch-on-first-class)
+(defmulti  create-error dispatch-on-first-class)
+(defmethod create-error net.hamnaberg.json.Error [e] e)
 (defmethod create-error Map [m] (create-error (:title m) (:code m) (:message m)))
 (defmethod create-error :default [title code message]
   (net.hamnaberg.json.Error/create title (opt code) (opt message)))
 
-(defmulti create-collection dispatch-on-first-class)
+(defmulti  create-collection dispatch-on-first-class)
 (defmethod create-collection Collection [c] c)
 (defmethod create-collection Map [m]
   (let [href (to-uri (:href m))
-        links (listify (:links m))
-        items (listify (:items m))
-        queries (listify (:queries m))
+        links (:links m)
+        items (:items m)
+        queries (:queries m)
         template (opt (:template m))
         error (opt (:error m))
        ]
     (create-collection href links items queries template error)))
 (defmethod create-collection :default [href links items queries template error]
-  (Collection/create (opt href) (map create-link links) (map create-item items) (map create-query queries) (opt template) (opt error)))
+  (Collection/create (map-opt to-uri (opt href)) (map create-link links) (map create-item items) (map create-query queries) (opt template) (opt error)))
 
 
 (defn expand [query props]
