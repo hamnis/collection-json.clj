@@ -3,17 +3,17 @@
     [net.hamnaberg.json.parser CollectionParser]    
     [net.hamnaberg.json Template Property Item Query Collection Link]
     [java.util Map]
-  )  
-  (:use 
-    [clojure.java.io]
+  )
+  (:require [clojure.java.io :as io])  
+  (:use     
     [collection-json.internal]
   ))
 
 (defn parse-collection [input] 
-  (beanify (. (CollectionParser.) parse (reader input))))
+  (beanify (. (CollectionParser.) parse (io/reader input))))
 
 (defn parse-template [input] 
-  (beanify (. (CollectionParser.) parseTemplate (reader input))))
+  (beanify (. (CollectionParser.) parseTemplate (io/reader input))))
 
 (defn by-rel [linkable rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) linkable)))
 
@@ -110,10 +110,10 @@
   (. query expand (make-data props)))
 
 (defn write-to [writeable output]
-  (. writeable (writeTo (writer output))))
+  (. writeable (writeTo (io/writer output))))
 
 (defn -main [& m]
-  (def coll (parse-collection (file (first m))))
+  (def coll (parse-collection (io/file (first m))))
   (println coll)  
   (println (template coll))
   ;(println (link-by-rel coll "feed"))
