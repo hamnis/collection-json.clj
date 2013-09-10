@@ -3,10 +3,6 @@
     [net.hamnaberg.json Target URITarget URITemplateTarget]
     [net.hamnaberg.json.util Optional Function]))
 
-(deftype internal-fn [f]
-  Function 
-  (apply [this input] (f input)))
-
 (defn to-uri [href]
   (cond 
     (nil? href) nil
@@ -28,14 +24,14 @@
     :else (Optional/fromNullable v)))
 
 (defn map-opt [f v]
-  (.map v (internal-fn. f)))
+  (opt (first (map f v))))
 
 (def none (opt nil))
 
 (defn opt? [v]
   (instance? Optional v))
 
-(defn extract-opt [v] (if (opt? v) (. v (orNull)) nil))
+(defn extract-opt [v] (first v))
 
 (defn beanify [input]
   (cond
