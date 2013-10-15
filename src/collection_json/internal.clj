@@ -31,6 +31,9 @@
 (defn opt? [v]
   (instance? Optional v))
 
+(defn map-values [f m]
+  (into {} (for [[k v] m] [k (f v)])))
+
 (defn extract-opt [v] (first v))
 
 (defn beanify [input]

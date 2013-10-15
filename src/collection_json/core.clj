@@ -25,7 +25,7 @@
 
 (defn query-by-rel [coll rel] (first (queries-by-rel coll rel)))
 
-(defn items [coll] (beanify (:items coll)))
+(defn items [coll] (map beanify (:items coll)))
 
 (defn head-item [coll] (first (items coll)))
 
@@ -38,9 +38,21 @@
     ;; whatever this is we cannot extract a template from it.
     :else nil))
 
-(defn props [obj] (beanify (:data obj)))
+(defn- from-value [v] 
+  (cond
+    (nil? v) nil
+    (.isNumeric v) (.asNumber v)
+    (.isBoolean v) (.asBoolean v)
+    (.isString v) (.asString v)
+    :else nil))
 
-(defn prop-by-name [obj n] (first (filter (fn [i] (= (:name i) n)) (props obj))))
+(defn data [obj] (let [p (:data obj)] (reduce merge (map (fn [i] {
+  (.getName i) (cond
+  (.hasObject i) (map-values from-value (.getObject i))
+  (.hasArray i) (map from-value (.getArray i))
+  :else (from-value (extract-opt (.getValue i))))}) p))))
+
+(defn prop-by-name [obj n] ((:dataAsMap obj)) n)
 
 (defn make-property [n v]
   (cond 
@@ -118,10 +130,13 @@
   (println (template coll))
   ;(println (link-by-rel coll "feed"))
   ;(println (prop-by-name (head-item coll) "full-name"))  
-  (println (create-template {:hello "world", :do "fawk"}))
-  (println (create-item "foo" {:hello "world", :do 1} nil))
-  (println (. (create-query "foo" "alternate" {:q nil}) getData))
-  (println (create-collection {:href "hello"}))
+  ;(println (create-template {:hello "world", :do "fawk"}))
+  ;(println (create-item "foo" {:hello "world", :do 1} nil))
+  ;(println (. (create-query "foo" "alternate" {:q nil}) getData))
+  ;(println (create-collection {:href "hello"}))
+  (println (head-item coll))
+  (println "FOOFOADJOPFJAD")  
+  (println (data (head-item coll)))
   ;(write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
   ;(write-to coll (file "/tmp/cj.json")))
 )

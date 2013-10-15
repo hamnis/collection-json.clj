@@ -5,7 +5,7 @@
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [
   			[org.clojure/clojure "1.5.1"]
-  			[net.hamnaberg.rest/json-collection "2.3-SNAPSHOT"]
+  			[net.hamnaberg.rest/json-collection "3.0-SNAPSHOT"]
   ]
   :main collection-json.core
 )
