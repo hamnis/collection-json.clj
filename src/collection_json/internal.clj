@@ -1,7 +1,7 @@
 (ns collection-json.internal
   (:import
     [net.hamnaberg.json Target URITarget URITemplateTarget]
-    [net.hamnaberg.json.util Optional Function]))
+    [net.hamnaberg.funclite Optional]))
 
 (defn to-uri [href]
   (cond 
