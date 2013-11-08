@@ -6,6 +6,7 @@
   :dependencies [
   			[org.clojure/clojure "1.5.1"]
   			[net.hamnaberg.rest/json-collection "3.0.0"]
+  			[com.damnhandy/handy-uri-templates "2.0.1"]
   ]
   :main collection-json.core
 )
