@@ -9,11 +9,13 @@
     [collection-json.internal]
   ))
 
-(defn parse-collection [input] 
-  (beanify (. (CollectionParser.) parse (io/reader input))))
+(defn- maybe-reader [input] (if (string? input) input (io/reader input)))
+
+(defn parse-collection [input]   
+  (beanify (. (CollectionParser.) parse (maybe-reader input))))
 
 (defn parse-template [input] 
-  (beanify (. (CollectionParser.) parseTemplate (io/reader input))))
+  (beanify (. (CollectionParser.) parseTemplate (maybe-reader input))))
 
 (defn by-rel [linkable rel] (beanify (filter (fn [i] (= (. i getRel) rel) ) linkable)))
 
@@ -46,11 +48,16 @@
     (.isString v) (.asString v)
     :else nil))
 
-(defn data [obj] (let [p (:data obj)] (reduce merge (map (fn [i] {
-  (.getName i) (cond
-  (.hasObject i) (map-values from-value (.getObject i))
-  (.hasArray i) (map from-value (.getArray i))
-  :else (from-value (extract-opt (.getValue i))))}) p))))
+(defn- value-from-data [i]
+  (cond
+      (.hasObject i) (map-values from-value (.getObject i))
+      (.hasArray i) (map from-value (.getArray i))
+      :else (from-value (extract-opt (.getValue i)))))
+
+(defn data [obj] 
+  (let [data (:data obj)] 
+    (reduce merge (map (fn [i] 
+      { (.getName i) (value-from-data i)}) data))))
 
 (defn prop-by-name [obj n] ((:dataAsMap obj)) n)
 
@@ -123,20 +130,3 @@
 
 (defn write-to [writeable output]
   (. writeable (writeTo (io/writer output))))
-
-(defn -main [& m]
-  (def coll (parse-collection (io/file (first m))))
-  (println coll)  
-  (println (template coll))
-  ;(println (link-by-rel coll "feed"))
-  ;(println (prop-by-name (head-item coll) "full-name"))  
-  ;(println (create-template {:hello "world", :do "fawk"}))
-  ;(println (create-item "foo" {:hello "world", :do 1} nil))
-  ;(println (. (create-query "foo" "alternate" {:q nil}) getData))
-  ;(println (create-collection {:href "hello"}))
-  (println (head-item coll))
-  (println "FOOFOADJOPFJAD")  
-  (println (data (head-item coll)))
-  ;(write-to (create-template (cons (prop-by-name (head-item coll) "full-name") nil)) (file "/tmp/template.json"))
-  ;(write-to coll (file "/tmp/cj.json")))
-)

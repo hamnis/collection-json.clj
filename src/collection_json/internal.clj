@@ -43,6 +43,4 @@
     :else (bean input)))
 
 (defn dispatch-on-first-class [& arglist] (let [args (count arglist)]
-  (cond 
-    (= args 1) (class (first arglist))
-    :default nil)))
+  (if (= args 1) (class (first arglist)) nil)))
