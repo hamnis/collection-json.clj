@@ -11,10 +11,9 @@
     :connection "git@github.com:hamnis/collection-json.clj.git"
   }
   :dependencies [
-    [org.clojure/clojure "1.5.1"]
-    [net.hamnaberg.rest/json-collection "3.0.0"]
-    [com.damnhandy/handy-uri-templates "2.0.1"]
-    [com.google.guava/guava "15.0"] ; This is stupid.
+    [org.clojure/clojure "1.6.0"]
+    [cheshire "5.3.1"]
+    [uritemplate-clj "1.0.0"]
   ]
   :pom-addition [:developers [:developer
                               [:name "Erlend Hamnaberg"]

@@ -3,8 +3,6 @@
             [clojure.java.io :as io]
             [collection-json.core :refer :all]))
 
-(def not-nil? (complement nil?))
-
 (deftest parse-coll
   (testing "parse collection"
     (testing "from string"
@@ -18,7 +16,7 @@
 (deftest check-item-coll
   (let [ c (parse-collection (io/reader "resources/item.json"))]
     (testing "items"    
-      (is (= 1 (count (items c))))
+      (is (= 1 (count (:items c))))
       (is (not-nil? (head-item c)))
     )
     (testing "links in collection"
